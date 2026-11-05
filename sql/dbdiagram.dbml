@@ -1,0 +1,92 @@
+// Paste this into https://dbdiagram.io to draw the ER diagram
+Table users {
+  id int [pk, increment]
+  name varchar
+  email varchar [unique]
+  password_hash varchar
+  role enum  // student, teacher, admin
+  status enum // pending, active, suspended
+  bio varchar
+  avatar varchar
+  language_pref enum // bn, en
+  dark_mode boolean
+  created_at timestamp
+}
+Table subjects { id int [pk, increment]  name varchar [unique] }
+Table topics { id int [pk, increment]  subject_id int [ref: > subjects.id]  name varchar }
+Table resources {
+  id int [pk, increment]
+  user_id int [ref: > users.id]
+  subject_id int [ref: > subjects.id]
+  title varchar
+  description varchar
+  content text
+  url varchar
+  created_at timestamp
+}
+Table questions {
+  id int [pk, increment]
+  topic_id int [ref: > topics.id]
+  created_by int [ref: > users.id]
+  question_text varchar
+  option_a varchar
+  option_b varchar
+  option_c varchar
+  option_d varchar
+  correct_option char
+  explanation varchar
+  created_at timestamp
+}
+Table quiz_attempts {
+  id int [pk, increment]
+  user_id int [ref: > users.id]
+  subject_id int [ref: > subjects.id]
+  score int
+  total int
+  created_at timestamp
+}
+Table attempt_answers {
+  id int [pk, increment]
+  attempt_id int [ref: > quiz_attempts.id]
+  question_id int [ref: > questions.id]
+  selected_option char
+  is_correct boolean
+}
+Table study_groups {
+  id int [pk, increment]
+  owner_id int [ref: > users.id]
+  subject_id int [ref: > subjects.id]
+  name varchar
+  description varchar
+  meeting_time varchar
+  max_members int
+  created_at timestamp
+}
+Table group_members {
+  id int [pk, increment]
+  group_id int [ref: > study_groups.id]
+  user_id int [ref: > users.id]
+  status enum // pending, approved, rejected
+  created_at timestamp
+  indexes { (group_id, user_id) [unique] }
+}
+Table group_messages {
+  id int [pk, increment]
+  group_id int [ref: > study_groups.id]
+  user_id int [ref: > users.id]
+  body varchar
+  created_at timestamp
+}
+Table password_resets {
+  id int [pk, increment]
+  user_id int [ref: > users.id]
+  token_hash char
+  expires_at datetime
+  used boolean
+}
+Table login_attempts {
+  id int [pk, increment]
+  email varchar
+  ip varchar
+  attempted_at timestamp
+}

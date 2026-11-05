@@ -1,0 +1,5 @@
+config/config.local.php
+storage/error.log
+public/uploads/avatars/*
+AI_LOG.md
+!public/uploads/avatars/.gitkeep

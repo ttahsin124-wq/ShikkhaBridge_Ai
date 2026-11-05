@@ -1,0 +1,137 @@
+-- ShikkhaBridge AI database schema
+CREATE DATABASE IF NOT EXISTS shikkhabridge CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE shikkhabridge;
+
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS login_attempts, password_resets, group_messages, group_members, study_groups,
+  attempt_answers, quiz_attempts, questions, resources, topics, subjects, users;
+SET FOREIGN_KEY_CHECKS = 1;
+
+CREATE TABLE users (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(150) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  role ENUM('student','teacher','admin') NOT NULL DEFAULT 'student',
+  status ENUM('pending','active','suspended') NOT NULL DEFAULT 'active',
+  bio VARCHAR(500) NULL,
+  avatar VARCHAR(255) NULL,
+  language_pref ENUM('bn','en') NOT NULL DEFAULT 'bn',
+  dark_mode TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE subjects (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE
+) ENGINE=InnoDB;
+
+CREATE TABLE topics (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  subject_id INT UNSIGNED NOT NULL,
+  name VARCHAR(120) NOT NULL,
+  FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE resources (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  subject_id INT UNSIGNED NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  description VARCHAR(500) NULL,
+  content TEXT NOT NULL,
+  url VARCHAR(255) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+  INDEX idx_resources_title (title)
+) ENGINE=InnoDB;
+
+CREATE TABLE questions (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  topic_id INT UNSIGNED NOT NULL,
+  created_by INT UNSIGNED NULL,
+  question_text VARCHAR(500) NOT NULL,
+  option_a VARCHAR(255) NOT NULL,
+  option_b VARCHAR(255) NOT NULL,
+  option_c VARCHAR(255) NOT NULL,
+  option_d VARCHAR(255) NOT NULL,
+  correct_option CHAR(1) NOT NULL,
+  explanation VARCHAR(500) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE quiz_attempts (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  subject_id INT UNSIGNED NOT NULL,
+  score INT UNSIGNED NOT NULL,
+  total INT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE attempt_answers (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  attempt_id INT UNSIGNED NOT NULL,
+  question_id INT UNSIGNED NOT NULL,
+  selected_option CHAR(1) NULL,
+  is_correct TINYINT(1) NOT NULL,
+  FOREIGN KEY (attempt_id) REFERENCES quiz_attempts(id) ON DELETE CASCADE,
+  FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE study_groups (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  owner_id INT UNSIGNED NOT NULL,
+  subject_id INT UNSIGNED NOT NULL,
+  name VARCHAR(150) NOT NULL,
+  description VARCHAR(500) NULL,
+  meeting_time VARCHAR(100) NULL,
+  max_members TINYINT UNSIGNED NOT NULL DEFAULT 10,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE group_members (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  group_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+  status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_group_user (group_id, user_id),
+  FOREIGN KEY (group_id) REFERENCES study_groups(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE group_messages (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  group_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+  body VARCHAR(500) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (group_id) REFERENCES study_groups(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE password_resets (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  token_hash CHAR(64) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  used TINYINT(1) NOT NULL DEFAULT 0,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX idx_token (token_hash)
+) ENGINE=InnoDB;
+
+CREATE TABLE login_attempts (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(150) NOT NULL,
+  ip VARCHAR(45) NOT NULL,
+  attempted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_email_time (email, attempted_at)
+) ENGINE=InnoDB;
